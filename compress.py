@@ -5,9 +5,9 @@ import sys
 import cv2
 from PIL import Image
 import fpstimer
-import zlib
-import zstd
 
+import zstd
+import zstandard
 
 
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", " "]
@@ -156,7 +156,10 @@ def main():
     """
     print("What's your video url (youtube)?")
     a = input("URL [e.g. https://www.youtube.com/watch?v=FtutLA63Cp8]: ")
-    print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " }")
+    print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
+          ffmpeg -i file_to_encode.mp4 -vcodec copy -an f.mp4 && \
+          rm file_to_encode.mp4 && \
+          mv f.mp4 file_to_encode.mp4 }")
     input("Press enter once done")
     """
     start_time = time.time()
@@ -168,7 +171,7 @@ def main():
     video_fps = capture.get(cv2.CAP_PROP_FPS)
     capture.release()
     
-    print("Encoding...")
+    #print("Encoding...")
     cap = cv2.VideoCapture(user_input)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if MODE == 0:
@@ -177,40 +180,25 @@ def main():
         end_time = time.time()
         elapsed = end_time - start_time
         print(f"{elapsed} seconds taken for generation, {(elapsed / total_frames)*1000}ms per frame")
-        print("Converting to string object")
-        """
+     #   print("Converting to string object")
+        
         with open("data.txt", 'w') as f:
             f.write('\n'.join(ASCII_LIST))
         print("Compressing...")
-        compressed = compress(5, '\n'.join(ASCII_LIST))
+        start_time = time.time()
+        compressed = zstd.compress('\n'.join(ASCII_LIST).encode(), 22)
+        end_time = time.time()
+        print("Non threaded compression took", (end_time - start_time))
+        
+        start_time = time.time()
+        ctxx = zstandard.ZstdCompressor(22, threads=4)
+        compressed = ctxx.compress('\n'.join(ASCII_LIST).encode())
+        end_time = time.time()
+        print("Threaded compression took", (end_time - start_time))
         with open("compressed_data.zstd", "wb") as f:
             f.write(compressed)
-        """
+        
 
-
-def compress(algo: int, indata: str):
-    compression_functions = {
-        1: lambda data: rle_encode(data),
-        2: lambda data: zlib.compress(data.encode(), level=-1),
-        3: lambda data: zlib.compress(data.encode(), level=9),
-        4: lambda data: zstd.compress(data.encode(), 3),
-        5: lambda data: zstd.compress(data.encode(), 22),
-    }
-
-    compression_function = compression_functions.get(algo, lambda data: data)
-    return compression_function(indata)
-
-def decompress(algo: int, indata: bytes):
-    compression_functions = {
-        1: lambda data: rle_decode(data),
-        2: lambda data: zlib.decompress(data),
-        3: lambda data: zlib.decompress(data),
-        4: lambda data: zstd.decompress(data),
-        5: lambda data: zstd.decompress(data),
-    }
-
-    compression_function = compression_functions.get(algo, lambda data: data)
-    return compression_function(indata)
 
 if __name__ == "__main__":
     main()
