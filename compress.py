@@ -16,7 +16,6 @@ frame_size = 237
 ASCII_LIST = []
 STORE_ON_DISK = False
 
-#video_fps = ""
 global video_fps      
 
 def get_video_fps(video_path):
@@ -27,8 +26,6 @@ def get_video_fps(video_path):
 
 def extract_transform_generate(video_path, start_frame, end_frame, shared_list, frame_size):
      # Initialize shared list with empty strings for frames in the specified range
-    #for i in range(start_frame - 1, end_frame):
-    #    shared_list[i] = ""
     shared_list[0:] = ["" for aa in shared_list[0:]]
     capture = cv2.VideoCapture(video_path)
     capture.set(1, start_frame)  # Points cap to target frame
@@ -63,11 +60,10 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
 # Resize image
 def resize_image(image_frame):
     width, height = image_frame.size
-    aspect_ratio = height / float(width * 2)  # 2.5 modifier to offset vertical scaling on console
+    aspect_ratio = height / float(width * 2) 
     new_height = int(aspect_ratio * frame_size)
     resized_image = image_frame.resize((frame_size, new_height))
-    # print('Aspect ratio: %f' % aspect_ratio)
-    # print('New dimensions %d %d' % resized_image.size)
+
     return resized_image
 
 
@@ -199,7 +195,7 @@ def main():
     print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " }")
     input("Press enter once done")
     start_time = time.time()
-    user_input = "file_to_encode.mp4"  # For testing purposes, you can uncomment the input prompt line
+    user_input = "file_to_encode.mp4"  
     video_fps = get_video_fps(user_input)
     print("Encoding...")
     cap = cv2.VideoCapture(user_input)
@@ -211,10 +207,8 @@ def main():
         elapsed = end_time - start_time
         print(f"{elapsed} seconds taken for generation, {(elapsed / total_frames)*1000}ms per frame")
         print("Converting to string object")
-        """
         with open("data.txt", 'w') as f:
             f.write('\n'.join(ASCII_LIST))
-        """
         print("Compressing...")
         compressed = compress(5, '\n'.join(ASCII_LIST))
         with open("compressed_data.zstd", "wb") as f:
@@ -248,64 +242,3 @@ def decompress(algo: int, indata: bytes):
 
 if __name__ == "__main__":
     main()
-    
-
-
-# Old testing stuff
-"""
-    print("Compression Type | Size   | Time to decompress")
-    print(f"None             |{round(len(ascii_str)/(1024**2), 2)}mb | 0.0")
-    
-
-    ascii_rle = rle_encode(ascii_str)
-    start_t = time.time()
-    rle_decode(ascii_rle)
-    end_t = time.time()
-    print(f"RLE              | {round(len(ascii_rle)/(1024**2), 2)}mB | {end_t - start_t}")
-    
-    
-    ascii_zlib = zlib.compress(ascii_str.encode(), level=-1)
-    start_t = time.time()
-    zlib.decompress(ascii_zlib)
-    end_t = time.time()
-    print(f"Zlib 6           | {round(len(ascii_zlib)/(1024**2), 2)}mB | {end_t - start_t}")
-
-    ascii_zlib = zlib.compress(ascii_str.encode(), level=9)
-    start_t = time.time()
-    zlib.decompress(ascii_zlib)
-    end_t = time.time()
-    print(f"Zlib 9           | {round(len(ascii_zlib)/(1024**2), 2)}mB | {end_t - start_t}")
-    
-    ascii_zstd = zstd.compress(ascii_str.encode(), 3)
-    start_t = time.time()
-    zstd.decompress(ascii_zstd)
-    end_t = time.time()
-    print(f"zstd 3           | {round(len(ascii_zlib)/(1024**2), 2)}mB | {end_t - start_t}")
-    
-    
-    ascii_zstd = zstd.compress(ascii_str.encode(), 22)
-    start_t = time.time()
-    zstd.decompress(ascii_zstd)
-    end_t = time.time()
-    print(f"zstd 22          | {round(len(ascii_zlib)/(1024**2), 2)}mB | {end_t - start_t}")
-    """
-    
-"""
-1: python3 compress.py - default mp4
-            Mean        Std.Dev.    Min         Median      Max
-real        19.187      0.444       18.897      19.047      20.461      
-user        112.626     0.671       112.043     112.372     114.339     
-sys         1.741       0.032       1.697       1.739       1.793       
-(base) [ghostdog@ghostdog badapple]$ 
-
-
-1: python3 compress.py - huffyuv
-            Mean        Std.Dev.    Min         Median      Max
-real        20.100      0.894       19.691      19.799      22.765      
-user        122.062     0.485       120.897     122.048     122.791     
-sys         3.175       0.537       2.739       2.942       4.496  
-
-
-ffmpeg -i fearanddelight.mp4 -f rawvideo -pixel_format bgr24 out.test.mkv
-
-"""
