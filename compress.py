@@ -1,12 +1,10 @@
 import os
-from multiprocessing import Process, Manager, cpu_count
+from multiprocessing import Process, Manager
 import time
 import sys
 import cv2
 from PIL import Image
-import zstd
 import zstandard
-
 
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", " "]
 frame_size = 237
@@ -18,6 +16,11 @@ global video_fps
 
 
 def extract_transform_generate(video_path, start_frame, end_frame, shared_list, frame_size):
+    ################################################################################################
+    # Convert a range of frames from a video to ascii
+    # This function runs for every thread.
+    # The `while` loop runs for every frame in the video, so small optimizations can scale very well
+    ################################################################################################
      # Initialize shared list with empty strings for frames in the specified range
     shared_list[0:] = ["" for aa in shared_list[0:]]
     capture = cv2.VideoCapture(video_path)
@@ -29,30 +32,31 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
         ret, image_frame = capture.read()
         
         try:
+            
             image = Image.fromarray(image_frame)
-            #ascii_characters = pixels_to_ascii(image)
             
             ######################################################################
             #                  CONVERT PIXELS TO ASCII
+            # We do this with pillow because of how much slower opencv is...
             ######################################################################
             # Convert to grayscale
             image_frame_pixels = image.convert("L")
-            
             # Resize
             width, height = image_frame_pixels.size
             aspect_ratio = height / float(width * 2) 
             new_height = int(aspect_ratio * frame_size)
             image_frame_pixels = image_frame_pixels.resize((frame_size, new_height))
-            
-            # Convert to ascii
+
             pixels = image_frame_pixels.getdata()
             ascii_characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
             ######################################################################
             ######################################################################
             ######################################################################
+            
             pixel_count = len(ascii_characters)
             ascii_image = "\n".join(
-                [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
+                [ascii_characters[\
+                index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
 
             # Append the ASCII frame at the correct index in the shared list
             shared_list[current_frame - 1] = ascii_image
@@ -69,17 +73,17 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
 
 
 
-
 def main():
-    """
-    print("What's your video url (youtube)?")
-    a = input("URL [e.g. https://www.youtube.com/watch?v=FtutLA63Cp8]: ")
-    print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
+    
+    a = str(input("Video URL [Default https://www.youtube.com/watch?v=FtutLA63Cp8]: ") \
+            or "https://www.youtube.com/watch?v=FtutLA63Cp8").strip()
+    command = "yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
           ffmpeg -i file_to_encode.mp4 -vcodec copy -an f.mp4 && \
           rm file_to_encode.mp4 && \
-          mv f.mp4 file_to_encode.mp4 }")
-    input("Press enter once done")
-    """
+          mv f.mp4 file_to_encode.mp4"
+    print("Running command...")
+    os.system(command)
+    
     start_time = time.time()
     path = "file_to_encode.mp4"  
     
@@ -99,7 +103,7 @@ def main():
         processes = []
 
 
-        total_threads = int(cpu_count() / 3)
+        total_threads = 4
         frames_per_process = total_frames // total_threads
 
         for i in range(total_threads):
@@ -125,18 +129,10 @@ def main():
      #   print("Converting to string object")
         
     with open("data.txt", 'w') as f:
-         f.write('\n'.join(ASCII_LIST))
+        f.write('\n'.join(ASCII_LIST))
     print("Compressing...")
-    start_time = time.time()
-    compressed = zstd.compress('\n'.join(ASCII_LIST).encode(), 22)
-    end_time = time.time()
-    print("Non threaded compression took", (end_time - start_time))
-    
-    start_time = time.time()
-    ctxx = zstandard.ZstdCompressor(22, threads=4)
+    ctxx = zstandard.ZstdCompressor(3, threads=12)
     compressed = ctxx.compress('\n'.join(ASCII_LIST).encode())
-    end_time = time.time()
-    print("Threaded compression took", (end_time - start_time))
     with open("compressed_data.zstd", "wb") as f:
         f.write(compressed)
         

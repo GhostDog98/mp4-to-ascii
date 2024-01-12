@@ -1,0 +1,6 @@
+zstandard
+zstd
+pillow
+multiprocessing
+opencv-python -- done
+fpstimer
