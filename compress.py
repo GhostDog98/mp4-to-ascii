@@ -33,7 +33,24 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
         
         try:
             image = Image.fromarray(image_frame)
-            ascii_characters = pixels_to_ascii(image)
+            #ascii_characters = pixels_to_ascii(image)
+            
+            ######################################################################
+            #                  CONVERT PIXELS TO ASCII
+            ######################################################################
+            # Convert to grayscale
+            image_frame = image_frame.convert("L")
+            
+            # Resize
+            width, height = image_frame.size
+            aspect_ratio = height / float(width * 2) 
+            new_height = int(aspect_ratio * frame_size)
+            image_frame = image_frame.resize((frame_size, new_height))
+            
+            # Convert to ascii
+            pixels = image_frame.getdata()
+            ascii_characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
+            
             pixel_count = len(ascii_characters)
             ascii_image = "\n".join(
                 [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
@@ -50,27 +67,6 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
         current_frame += 1  # increases global frame counter
 
     capture.release()
-
-
-
-
-
-# Convert stuff
-# For some reason, merging these calls into one cuts down on ~25% of the runtime
-def pixels_to_ascii(image_frame):
-    # Convert to grayscale
-    image_frame = image_frame.convert("L")
-    
-    # Resize
-    width, height = image_frame.size
-    aspect_ratio = height / float(width * 2) 
-    new_height = int(aspect_ratio * frame_size)
-    image_frame = image_frame.resize((frame_size, new_height))
-    
-    # Convert to ascii
-    pixels = image_frame.getdata()
-    characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
-    return characters
 
 
 def preflight_operations(path):
@@ -108,47 +104,6 @@ def preflight_operations(path):
     sys.stdout.write('Warning: File not found!\n')
     return -1
 
-def rle_encode(data):
-    encoding = ''
-    prev_char = ''
-    count = 1
-
-    if not data: return ''
-
-    for char in data:
-        # If the prev and current characters
-        # don't match...
-        if char != prev_char:
-            # ...then add the count and character
-            # to our encoding
-            if prev_char:
-                encoding += str(count) + prev_char
-            count = 1
-            prev_char = char
-        else:
-            # Or increment our counter
-            # if the characters do match
-            count += 1
-    else:
-        # Finish off the encoding
-        encoding += str(count) + prev_char
-        return encoding
-
-def rle_decode(data):
-    decode = ''
-    count = ''
-    for char in data:
-        # If the character is numerical...
-        if char.isdigit():
-            # ...append it to our count
-            count += char
-        else:
-            # Otherwise we've seen a non-numerical
-            # character and need to expand it for
-            # the decoding
-            decode += char * int(count)
-            count = ''
-    return decode
 
 
 MODE = 0
