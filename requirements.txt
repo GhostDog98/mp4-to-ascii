@@ -2,5 +2,5 @@ zstandard
 zstd
 pillow
 multiprocessing
-opencv-python -- done
+opencv-python
 fpstimer
