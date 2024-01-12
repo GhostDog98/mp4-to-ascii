@@ -25,7 +25,6 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
     capture = cv2.VideoCapture(video_path)
     capture.set(1, start_frame)  # Points cap to target frame
     current_frame = start_frame
-    frame_count = 1
     ret, image_frame = capture.read()
     
     while ret and current_frame <= end_frame:
@@ -39,18 +38,20 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
             #                  CONVERT PIXELS TO ASCII
             ######################################################################
             # Convert to grayscale
-            image_frame = image_frame.convert("L")
+            image_frame_pixels = image.convert("L")
             
             # Resize
-            width, height = image_frame.size
+            width, height = image_frame_pixels.size
             aspect_ratio = height / float(width * 2) 
             new_height = int(aspect_ratio * frame_size)
-            image_frame = image_frame.resize((frame_size, new_height))
+            image_frame_pixels = image_frame_pixels.resize((frame_size, new_height))
             
             # Convert to ascii
-            pixels = image_frame.getdata()
+            pixels = image_frame_pixels.getdata()
             ascii_characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
-            
+            ######################################################################
+            ######################################################################
+            ######################################################################
             pixel_count = len(ascii_characters)
             ascii_image = "\n".join(
                 [ascii_characters[index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
@@ -63,7 +64,6 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
         except AttributeError:
             continue
 
-        frame_count += 1  # increases internal frame counter
         current_frame += 1  # increases global frame counter
 
     capture.release()
@@ -106,7 +106,7 @@ def preflight_operations(path):
 
 
 
-MODE = 0
+
 def main():
     """
     print("What's your video url (youtube)?")
@@ -120,38 +120,33 @@ def main():
     start_time = time.time()
     user_input = "file_to_encode.mp4"  
     
-    
-    # Get the fps
-    capture = cv2.VideoCapture(user_input)
-    video_fps = capture.get(cv2.CAP_PROP_FPS)
-    capture.release()
-    
     #print("Encoding...")
     cap = cv2.VideoCapture(user_input)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    if MODE == 0:
     
-        total_frames = preflight_operations(user_input)
-        end_time = time.time()
-        elapsed = end_time - start_time
-        print(f"{elapsed} seconds taken for generation, {(elapsed / total_frames)*1000}ms per frame")
+    
+    total_frames = preflight_operations(user_input)
+    
+    end_time = time.time()
+    elapsed = end_time - start_time
+    print(f"{elapsed} seconds taken for generation, {(elapsed / total_frames)*1000}ms per frame")
      #   print("Converting to string object")
         
-        with open("data.txt", 'w') as f:
-            f.write('\n'.join(ASCII_LIST))
-        print("Compressing...")
-        start_time = time.time()
-        compressed = zstd.compress('\n'.join(ASCII_LIST).encode(), 22)
-        end_time = time.time()
-        print("Non threaded compression took", (end_time - start_time))
-        
-        start_time = time.time()
-        ctxx = zstandard.ZstdCompressor(22, threads=4)
-        compressed = ctxx.compress('\n'.join(ASCII_LIST).encode())
-        end_time = time.time()
-        print("Threaded compression took", (end_time - start_time))
-        with open("compressed_data.zstd", "wb") as f:
-            f.write(compressed)
+    with open("data.txt", 'w') as f:
+         f.write('\n'.join(ASCII_LIST))
+    print("Compressing...")
+    start_time = time.time()
+    compressed = zstd.compress('\n'.join(ASCII_LIST).encode(), 22)
+    end_time = time.time()
+    print("Non threaded compression took", (end_time - start_time))
+    
+    start_time = time.time()
+    ctxx = zstandard.ZstdCompressor(22, threads=4)
+    compressed = ctxx.compress('\n'.join(ASCII_LIST).encode())
+    end_time = time.time()
+    print("Threaded compression took", (end_time - start_time))
+    with open("compressed_data.zstd", "wb") as f:
+        f.write(compressed)
         
 
 
