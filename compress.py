@@ -74,7 +74,6 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
 
 
 def main():
-    
     a = str(input("Video URL [Default https://www.youtube.com/watch?v=FtutLA63Cp8]: ") \
             or "https://www.youtube.com/watch?v=FtutLA63Cp8").strip()
     command = "yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
@@ -92,35 +91,33 @@ def main():
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
     
-    if os.path.exists(path):
-        path_to_video = path.strip()
-        cap = cv2.VideoCapture(path_to_video)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        cap.release()
+    path_to_video = path.strip()
+    cap = cv2.VideoCapture(path_to_video)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
 
-        manager = Manager()
-        shared_list = manager.list(["" for _ in range(total_frames)])
-        processes = []
+    manager = Manager()
+    shared_list = manager.list(["" for _ in range(total_frames)])
+    processes = []
 
 
-        total_threads = 4
-        frames_per_process = total_frames // total_threads
+    total_threads = 4
+    frames_per_process = total_frames // total_threads
 
-        for i in range(total_threads):
-            start_frame = i * frames_per_process + 1
-            end_frame = (i + 1) * frames_per_process if i < 3 else total_frames - 1
-            process = Process(target=extract_transform_generate,
-                      args=(path_to_video, start_frame, end_frame, shared_list, frame_size))
-            processes.append(process)
-            process.start()
+    for i in range(total_threads):
+        start_frame = i * frames_per_process + 1
+        end_frame = (i + 1) * frames_per_process if i < 3 else total_frames - 1
+        process = Process(target=extract_transform_generate,
+                  args=(path_to_video, start_frame, end_frame, shared_list, frame_size))
+        processes.append(process)
+        process.start()
 
-        for process in processes:
-            process.join()
+    for process in processes:
+        process.join()
 
-        ASCII_LIST.extend(shared_list)
-        sys.stdout.write('ASCII generation completed!\n')    
+    ASCII_LIST.extend(shared_list)
+    sys.stdout.write('ASCII generation completed!\n')    
     # Otherwise, if we cant find the file
-    sys.stdout.write('Warning: File not found!\n')
     
     
     end_time = time.time()
