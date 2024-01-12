@@ -33,9 +33,18 @@ def decompress(algo: int, indata: bytes):
     compression_function = compression_functions.get(algo, lambda data: data)
     return compression_function(indata)
 
-
+import os, psutil
 def main():
-    with open("output.txt", 'rb') as f:
+    
+    
+    parent_pid = os.getppid()
+    if psutil.Process(parent_pid).name() == 'Powershell.exe':
+        print("Running in powershell, changing clear cmd")
+        clr = 'Clear-Host'
+    else:
+        clr = '\033[2J'
+    
+    with open("compressed_data.zstd", 'rb') as f:
         data = decompress(5, f.read()).decode()
         data = data.split('\n')
     # Assume 30 fps
@@ -48,7 +57,7 @@ def main():
     
     for i in range(0, num_lines, lines_per_chunk):
         chunk = data[i:i + lines_per_chunk]  # Extract a chunk of 45 lines
-        print('\033[2J')
+        print(clr)
         for line in chunk:
             print(line[:characters_per_line])  # Print 150 characters per line
         timer.sleep()  # Wait 1/30 of a second

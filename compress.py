@@ -4,8 +4,6 @@ import time
 import sys
 import cv2
 from PIL import Image
-import fpstimer
-
 import zstd
 import zstandard
 
@@ -69,7 +67,27 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
     capture.release()
 
 
-def preflight_operations(path):
+
+
+
+def main():
+    """
+    print("What's your video url (youtube)?")
+    a = input("URL [e.g. https://www.youtube.com/watch?v=FtutLA63Cp8]: ")
+    print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
+          ffmpeg -i file_to_encode.mp4 -vcodec copy -an f.mp4 && \
+          rm file_to_encode.mp4 && \
+          mv f.mp4 file_to_encode.mp4 }")
+    input("Press enter once done")
+    """
+    start_time = time.time()
+    path = "file_to_encode.mp4"  
+    
+    print("Encoding...")
+    cap = cv2.VideoCapture(path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    
     if os.path.exists(path):
         path_to_video = path.strip()
         cap = cv2.VideoCapture(path_to_video)
@@ -96,36 +114,10 @@ def preflight_operations(path):
             process.join()
 
         ASCII_LIST.extend(shared_list)
-        sys.stdout.write('ASCII generation completed!\n')
-
-        return total_frames  # Return total frames
-    
+        sys.stdout.write('ASCII generation completed!\n')    
     # Otherwise, if we cant find the file
     sys.stdout.write('Warning: File not found!\n')
-    return -1
-
-
-
-
-def main():
-    """
-    print("What's your video url (youtube)?")
-    a = input("URL [e.g. https://www.youtube.com/watch?v=FtutLA63Cp8]: ")
-    print("Run the command { yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
-          ffmpeg -i file_to_encode.mp4 -vcodec copy -an f.mp4 && \
-          rm file_to_encode.mp4 && \
-          mv f.mp4 file_to_encode.mp4 }")
-    input("Press enter once done")
-    """
-    start_time = time.time()
-    user_input = "file_to_encode.mp4"  
     
-    #print("Encoding...")
-    cap = cv2.VideoCapture(user_input)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-    
-    total_frames = preflight_operations(user_input)
     
     end_time = time.time()
     elapsed = end_time - start_time
