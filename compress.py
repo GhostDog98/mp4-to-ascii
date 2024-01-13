@@ -29,8 +29,7 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
     ret, image_frame = capture.read()
     
     while ret and current_frame <= end_frame:
-        ret, image_frame = capture.read()
-        
+
         try:
             
             image = Image.fromarray(image_frame)
@@ -67,13 +66,15 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
             continue
 
         current_frame += 1  # increases global frame counter
+    ret, image_frame = capture.read() # Moving this to here instead of start of loop saves ~0.05ms per loop
 
     capture.release()
 
 
-
+global elapsed
 
 def main():
+    """
     a = str(input("Video URL [Default https://www.youtube.com/watch?v=FtutLA63Cp8]: ") \
             or "https://www.youtube.com/watch?v=FtutLA63Cp8").strip()
     command = "yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
@@ -82,11 +83,12 @@ def main():
           mv f.mp4 file_to_encode.mp4"
     print("Running command...")
     os.system(command)
-    
+    """
     start_time = time.time()
-    path = "file_to_encode.mp4"  
+    path = f"file_to_encode.mp4"
+    #print(path)
     
-    print("Encoding...")
+    #print("Encoding...")
     cap = cv2.VideoCapture(path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
@@ -116,7 +118,7 @@ def main():
         process.join()
 
     ASCII_LIST.extend(shared_list)
-    sys.stdout.write('ASCII generation completed!\n')    
+    #sys.stdout.write('ASCII generation completed!\n')    
     # Otherwise, if we cant find the file
     
     
@@ -124,16 +126,16 @@ def main():
     elapsed = end_time - start_time
     print(f"{elapsed} seconds taken for generation, {(elapsed / total_frames)*1000}ms per frame")
      #   print("Converting to string object")
-        
-    with open("data.txt", 'w') as f:
+    
+    with open("file.txt", 'w') as f:
         f.write('\n'.join(ASCII_LIST))
+    
     print("Compressing...")
     ctxx = zstandard.ZstdCompressor(3, threads=12)
     compressed = ctxx.compress('\n'.join(ASCII_LIST).encode())
     with open("compressed_data.zstd", "wb") as f:
         f.write(compressed)
-        
-
+    
 
 if __name__ == "__main__":
     main()
