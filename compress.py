@@ -1,12 +1,13 @@
 import os
 from multiprocessing import Process, Manager
 import time
-import sys
 import cv2
 from PIL import Image
 import zstandard
 
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", " "]
+ASCII_CHAR_LEN = len(ASCII_CHARS)
+ascii_characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
 frame_size = 237
 
 ASCII_LIST = []
@@ -37,7 +38,10 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
             ######################################################################
             #                  CONVERT PIXELS TO ASCII
             # We do this with pillow because of how much slower opencv is...
+            # And before you ask, numpy is slower
             ######################################################################
+            ### Option 2 start
+            
             # Convert to grayscale
             image_frame_pixels = image.convert("L")
             # Resize
@@ -45,18 +49,17 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
             aspect_ratio = height / float(width * 2) 
             new_height = int(aspect_ratio * frame_size)
             image_frame_pixels = image_frame_pixels.resize((frame_size, new_height))
-
+            
             pixels = image_frame_pixels.getdata()
             ascii_characters = "".join([ASCII_CHARS[pixel // 25] for pixel in pixels])
             ######################################################################
             ######################################################################
             ######################################################################
             
-            pixel_count = len(ascii_characters)
             ascii_image = "\n".join(
                 [ascii_characters[\
-                index:(index + frame_size)] for index in range(0, pixel_count, frame_size)])
-
+                index:(index + frame_size)] for index in range(0, ASCII_CHAR_LEN, frame_size)])
+            
             # Append the ASCII frame at the correct index in the shared list
             shared_list[current_frame - 1] = ascii_image
 
@@ -74,7 +77,7 @@ def extract_transform_generate(video_path, start_frame, end_frame, shared_list, 
 global elapsed
 
 def main():
-    """
+    
     a = str(input("Video URL [Default https://www.youtube.com/watch?v=FtutLA63Cp8]: ") \
             or "https://www.youtube.com/watch?v=FtutLA63Cp8").strip()
     command = "yt-dlp -o file_to_encode.mp4 -f \"[height <=? 480]\" " + a + " && \
@@ -83,7 +86,7 @@ def main():
           mv f.mp4 file_to_encode.mp4"
     print("Running command...")
     os.system(command)
-    """
+    
     start_time = time.time()
     path = f"file_to_encode.mp4"
     #print(path)
@@ -118,9 +121,6 @@ def main():
         process.join()
 
     ASCII_LIST.extend(shared_list)
-    #sys.stdout.write('ASCII generation completed!\n')    
-    # Otherwise, if we cant find the file
-    
     
     end_time = time.time()
     elapsed = end_time - start_time
